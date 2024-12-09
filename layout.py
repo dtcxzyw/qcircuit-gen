@@ -54,6 +54,17 @@ class SwapGate(Gate):
             canvas[i][x] = R"\qw \qwx"
         canvas[self.bit2][x] = R"\qswap \qwx"
 
+class Barrier(Gate):
+    def __init__(self, src_bit, tgt_bit):
+        assert src_bit >= 0 and tgt_bit >= 0
+        assert src_bit != tgt_bit
+        super().__init__(min(src_bit, tgt_bit), 1, abs(src_bit - tgt_bit) + 1)
+        self.src_bit = min(src_bit, tgt_bit)
+        self.tgt_bit = max(src_bit, tgt_bit)
+
+    def draw(self, x, canvas):
+        canvas[self.src_bit][x] = fr"\qw \barrier{{{self.tgt_bit - self.src_bit}}}"
+
 class Circuit:
     def __init__(self, left_margin = 1, right_margin = 1):
         self.gates = []
@@ -101,8 +112,14 @@ class Circuit:
     def lstick(self, tgt_bit, name):
         return self.add_gate(SingleBitGate(tgt_bit, fr'\lstick{{{name}}}'))
     
-    def rstick(self, tgt_bit, name):
-        return self.add_gate(SingleBitGate(tgt_bit, fr'\rstick{{{name}}}'))
+    def rstick(self, tgt_bit, name, classic = False):
+        return self.add_gate(SingleBitGate(tgt_bit, fr'\rstick{{{name}}}' + (R'\cw' if classic else R'\qw')))
+
+    def nbits(self, tgt_bit):
+        return self.add_gate(SingleBitGate(tgt_bit, R"\qw{/^n}"))
+    
+    def barrier(self, src_bit, tgt_bit):
+        return self.add_gate(Barrier(src_bit, tgt_bit))
 
     def __str__(self):
         s = z3.Optimize()
